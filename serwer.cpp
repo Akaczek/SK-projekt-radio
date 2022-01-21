@@ -10,47 +10,83 @@
 #include <iostream>
 #include <unordered_set>
 #include <fstream>
+#include <poll.h>
 
-#define BUFSIZE 15000
+#define FILEBUFSIZE 4096
+#define COMBUFSIZE 64
 
 using namespace std;
 
-char client_message[BUFSIZE];
-char buffer[32];
-
-FILE *out;
-
-int ile = 0;
-unordered_set<int> clientFds;
+char file_buff[FILEBUFSIZE];
+char com_buff[COMBUFSIZE];
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct sock{
+  	int out;
+  	int in;
+  }sock;
+
 //odbieranie od klienta
-void * socketThread(void *arg)
+void * odbierz_dane(void *arg)
 {
-  	cout << "Nowy watek" << endl;
-  	int newSocket = *((int *)arg);
+  	cout << "Nowy klient" << endl;
+  	int sock = *((int *)arg);
   	int n;
-  	//odebranie nazwy pliku
-  	recv(newSocket, client_message, BUFSIZE, 0);
   	
-  	ofstream file(client_message, ios::binary);
-  	memset(&client_message, 0, sizeof (client_message));
+  	//odebranie nazwy pliku
+  	cout << "Odbior pliku" << endl;
+  	recv(sock, file_buff, FILEBUFSIZE, 0);
+  	
+  	ofstream file(file_buff, ios::binary);
+  	memset(&file_buff, 0, sizeof (file_buff));
   	
   	//odebranie zawartosci pliku
   	while(1){
-  		n = recv(newSocket , client_message , BUFSIZE ,MSG_DONTWAIT);
+  		n = recv(sock , file_buff , FILEBUFSIZE ,MSG_DONTWAIT);
 		if(n > 0){
 			
-			file.write(client_message, n);
-			cout << "write poszedl" <<  endl;
-			memset(&client_message, 0, sizeof (client_message));
+			file.write(file_buff, n);
+			memset(&file_buff, 0, sizeof (file_buff));
 		}
 		if(n == 0)
 			break;
 	}
-
+	
     	file.close();
+    	cout << "Plik odebrany" << endl;
+    	cout << "wyjscie z watku" << endl;
+
+    	pthread_exit(NULL);
+}
+
+void * wyslij(void *arg)
+{
+  	cout << "Nowy klient" << endl;
+  	int sock = *((int *)arg);
+  	int n;
+  	
+  	//odebranie nazwy pliku
+  	cout << "Wysylanie pliku" << endl;
+  	recv(sock, file_buff, FILEBUFSIZE, 0);
+  	sleep(1);
+  	cout << file_buff << endl;
+  	ifstream file (file_buff, ios::binary);
+  	memset(&file_buff, 0, sizeof (file_buff));
+  	
+  	//wyslanie zawartosci pliku
+  	while(file){
+  		file.read(file_buff, FILEBUFSIZE);
+  		size_t count =  file.gcount();
+  		send(sock, file_buff, FILEBUFSIZE,0);
+  		memset(&file_buff, 0, sizeof (file_buff));
+  		if(!count)
+  			break;
+  		
+  	}
+  	
+    	file.close();
+    	cout << "Plik wyslany" << endl;
     	cout << "wyjscie z watku" << endl;
 
     	pthread_exit(NULL);
@@ -62,6 +98,8 @@ int main(){
   struct sockaddr_storage serverStorage;
   socklen_t addr_size;
 
+
+  sock socks;
   //Stworzenie gniazda
   serverSocket = socket(PF_INET, SOCK_STREAM, 0);
 
@@ -92,15 +130,18 @@ int main(){
     {
         //Przyjęcie nowego połączenia
         addr_size = sizeof serverStorage;
-        newSocket = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
-        clientFds.insert(newSocket);
-        
+        socks.in = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
+        socks.out = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
+        if(newSocket > 0){
+		
+		if( pthread_create(&thread_id, NULL, odbierz_dane, &socks.in) != 0 )  
+		   printf("Nie udalo sie stworzyc watku odbierajacego\n");
+		if( pthread_create(&thread_id, NULL, wyslij, &socks.out) != 0 )  
+		   printf("Nie udalo sie stworzyc watku wysylajacego\n");
 
-        if( pthread_create(&thread_id, NULL, socketThread, &newSocket) != 0 )  
-           printf("Nie udalo sie stworzyc watku\n");
-
-        pthread_detach(thread_id);
-        pthread_join(thread_id,NULL);
+		pthread_detach(thread_id);
+		pthread_join(thread_id,NULL);
+        }
     }
   return 0;
 }
