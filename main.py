@@ -3,7 +3,7 @@ import time
 
 import pyaudio
 
-HOST = "192.168.100.208"
+HOST = "192.168.100.213"
 PORT = 4444
 
 
@@ -22,9 +22,8 @@ def zakoncz(sock1, sock2):
     sock2.shutdown(socket.SHUT_WR)
     sock2.close()
 
-def receiveAudio(nazwa_pliku, sock):
-    sock.send(bytes(nazwa_pliku, "utf-8"))
-    sock.settimeout(1)
+def receiveAudio(sock):
+    sock.settimeout(2)
     while True:
         try:
             data = sock.recv(4096)
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     sock_out, sock_in = polacz()
     sendFile("145276", sock_out)
     time.sleep(1)
-    receiveAudio("145276",sock_in)
+    #receiveAudio(sock_in)
     zakoncz(sock_out, sock_in)
 
 
