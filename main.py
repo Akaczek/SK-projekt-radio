@@ -141,8 +141,8 @@ if __name__ == "__main__":
         if okno == "start":
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False;
-                    connected = False;
+                    running = False
+                    connected = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
                         try:
@@ -162,10 +162,10 @@ if __name__ == "__main__":
 
 
                 if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
-                    pygame.draw.rect(screen, color_light, przycisk_startu)
+                    pygame.draw.rect(screen, color_light, przycisk_startu,  border_radius=3)
 
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_startu)
+                    pygame.draw.rect(screen, color_dark, przycisk_startu, border_radius=3)
                 pygame.draw.polygon(screen, green, ((X//2-30, Y//2 + 40), (X//2 - 30, Y//2 - 40), (X//2 + 30, Y//2)))
             pygame.display.update()
 
@@ -206,32 +206,32 @@ if __name__ == "__main__":
                                 ktore_kolejka += 1
 
                 if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
-                    pygame.draw.rect(screen, color_light, przycisk_wyslij)
+                    pygame.draw.rect(screen, color_light, przycisk_wyslij, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_wyslij)
+                    pygame.draw.rect(screen, color_dark, przycisk_wyslij, border_radius=3)
 
                 if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
-                    pygame.draw.rect(screen, color_light, przycisk_gora)
+                    pygame.draw.rect(screen, color_light, przycisk_gora, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_gora)
+                    pygame.draw.rect(screen, color_dark, przycisk_gora, border_radius=3)
 
                 if 350 <= mouse[0] <= 390 and 165 <= mouse[1] <= 205:
-                    pygame.draw.rect(screen, color_light, przycisk_dol)
+                    pygame.draw.rect(screen, color_light, przycisk_dol, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_dol)
+                    pygame.draw.rect(screen, color_dark, przycisk_dol, border_radius=3)
 
                 #przycisk stopu
                 if 400 <= mouse[0] <= 480 and 20 <= mouse[1] <= 100:
-                    pygame.draw.rect(screen, color_dark, przycisk_stopu)
+                    pygame.draw.rect(screen, color_dark, przycisk_stopu, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_light, przycisk_stopu)
+                    pygame.draw.rect(screen, color_light, przycisk_stopu, border_radius=3)
                 pygame.draw.rect(screen, red, stop)
 
                 #przycisk dodaj
                 if 400 <= mouse[0] <= 480 and 150 <= mouse[1] <= 230:
-                    pygame.draw.rect(screen, color_dark, przycisk_dodaj)
+                    pygame.draw.rect(screen, color_dark, przycisk_dodaj, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_light, przycisk_dodaj)
+                    pygame.draw.rect(screen, color_light, przycisk_dodaj, border_radius=3)
                 pygame.draw.rect(screen, black, pionowo)
                 pygame.draw.rect(screen, black, poziomo)
 
@@ -287,24 +287,24 @@ if __name__ == "__main__":
 
 
             if 410 <= mouse[0] <= 460 and 100 <= mouse[1] <= 150:
-                pygame.draw.rect(screen, color_light, przycisk_cofnij)
+                pygame.draw.rect(screen, color_light, przycisk_cofnij, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_cofnij)
+                pygame.draw.rect(screen, color_dark, przycisk_cofnij, border_radius=3)
 
             if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
-                pygame.draw.rect(screen, color_light, przycisk_gora)
+                pygame.draw.rect(screen, color_light, przycisk_gora, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_gora)
+                pygame.draw.rect(screen, color_dark, przycisk_gora, border_radius=3)
 
             if 350 <= mouse[0] <= 390 and 165 <= mouse[1] <= 205:
-                pygame.draw.rect(screen, color_light, przycisk_dol)
+                pygame.draw.rect(screen, color_light, przycisk_dol, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_dol)
+                pygame.draw.rect(screen, color_dark, przycisk_dol, border_radius=3)
 
             if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
-                pygame.draw.rect(screen, color_light, przycisk_wyslij)
+                pygame.draw.rect(screen, color_light, przycisk_wyslij, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_wyslij)
+                pygame.draw.rect(screen, color_dark, przycisk_wyslij, border_radius=3)
 
             for i in range(len(lista_do_wyslania)):
                 text = font.render(lista_do_wyslania[i], True, black)

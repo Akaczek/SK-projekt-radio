@@ -3,9 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="285c1bae-3500-4ecb-a131-8ba3afd08e7d" name="Changes" comment="Zmiany w serwerze i kliencie">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/145276.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out.wav" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/serwer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/serwer.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -35,7 +33,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/main.py" />
+    <property name="last_opened_file_path" value="$USER_HOME$/Downloads/SI-paczka/SI-paczka/Skrypty" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunManager" selected="Python.klient1">
@@ -121,7 +119,21 @@
       <option name="project" value="LOCAL" />
       <updated>1642855798405</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Zmiany w serwerze i kliencie">
+      <created>1643301347483</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1643301347484</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Zmiany w serwerze i kliencie">
+      <created>1643301364380</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1643301364380</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

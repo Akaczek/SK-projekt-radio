@@ -34,6 +34,7 @@ vector<string> listaplikow;
 vector<sock> clientFds;
 
 int ile_klientow = 0;
+int ile_plikow = 0;
 
 
 //odbieranie od klienta
@@ -85,31 +86,30 @@ void sendAudio(int sock, char* audio){
 	send(sock, audio, FILEBUFSIZE,0);
 }
 
-void * zczytaj(void *arg)
+void * zczytaj(void *)
 {
 	int n;
 	int pauza = 0;
 	cout << "RADIO" << endl;
 	while (1)
 	{
-	
-		for(int i = 0; i < listaplikow.size(); i++){
+		int licznik_pliki = 0;
+		while(licznik_pliki < ile_plikow){
 			//wyslanie zawartosci pliku
-			ifstream file (listaplikow[i], ios::binary);
+			ifstream file (listaplikow[licznik_pliki], ios::binary);
 			memset(&file_buff, 0, sizeof (file_buff));
 			while(file){
 				file.read(file_buff, FILEBUFSIZE);
 				size_t count =  file.gcount();
-				int licznik = 0;
-				cout << ile_klientow << endl;
-				while(licznik < ile_klientow){
-					send(clientFds[licznik].out, file_buff, FILEBUFSIZE,0);
-					n = recv(clientFds[licznik].kom, com_buff, COMBUFSIZE, MSG_DONTWAIT);
+				int licznik_klienci = 0;
+				while(licznik_klienci < ile_klientow){
+					send(clientFds[licznik_klienci].out, file_buff, FILEBUFSIZE,0);
+					n = recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, MSG_DONTWAIT);
 					if(n > 0){
 						if (strcmp(com_buff, "close") == 0){
-							close(clientFds[licznik].out);
-							close(clientFds[licznik].kom);
-							clientFds.erase(clientFds.begin() + licznik);
+							close(clientFds[licznik_klienci].out);
+							close(clientFds[licznik_klienci].kom);
+							clientFds.erase(clientFds.begin() + licznik_klienci);
 							ile_klientow --;
 							break;
 						}
@@ -117,23 +117,22 @@ void * zczytaj(void *arg)
 							for(int k = 0; k < listaplikow.size();k++){
 								const char* nazwa_pliku;
 								nazwa_pliku = &listaplikow[k][0];
-								cout << 1 << endl;
-								send(clientFds[licznik].kom, nazwa_pliku, strlen(nazwa_pliku), 0);
-								send(clientFds[licznik].kom, "|", 1, 0);
+								send(clientFds[licznik_klienci].kom, nazwa_pliku, strlen(nazwa_pliku), 0);
+								send(clientFds[licznik_klienci].kom, "|", 1, 0);
 								
 								this_thread::sleep_for(wait);
 							}
 						}
 					}
 					if(n == 0){
-						close(clientFds[licznik].out);
-						close(clientFds[licznik].kom);
-						clientFds.erase(clientFds.begin() + licznik);
+						close(clientFds[licznik_klienci].out);
+						close(clientFds[licznik_klienci].kom);
+						clientFds.erase(clientFds.begin() + licznik_klienci);
 						ile_klientow --;
 						cout << "klient sie rozlaczyl" << endl;
 						break;
 					}
-					licznik++;
+					licznik_klienci++;
 				}
 				if(!count)
 					break;
@@ -144,7 +143,8 @@ void * zczytaj(void *arg)
 				}
 				this_thread::sleep_for(wait);
 			}
-				file.close();
+			file.close();
+			licznik_pliki++;		
 		}
 	}
 	pthread_exit(NULL);
@@ -160,6 +160,7 @@ int main(){
 	ifstream lista("listaplikow");
 	while(getline(lista, nazwa)){
 		listaplikow.push_back(nazwa);
+		ile_plikow++;
 	}
 	lista.close();
 	
