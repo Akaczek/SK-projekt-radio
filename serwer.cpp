@@ -25,15 +25,16 @@ char file_buff[FILEBUFSIZE];
 char sock_buff[SOCKBUFSIZE];
 char com_buff[COMBUFSIZE];
 
-vector<string> listaplikow;
-vector<int> clientFds;
-
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
 typedef struct sock{
   	int out;
-  	int in;
+  	int kom;
   }sock;
+
+vector<string> listaplikow;
+vector<sock> clientFds;
+
+int ile_klientow = 0;
+
 
 //odbieranie od klienta
 void * odbierz_dane(void *arg)
@@ -43,26 +44,38 @@ void * odbierz_dane(void *arg)
   	int n;
   	
   	//odebranie nazwy pliku
-  	cout << "Odbior pliku" << endl;
-  	recv(sock, sock_buff, SOCKBUFSIZE, 0);
-  	
-  	ofstream file(sock_buff, ios::binary);
-  	memset(&sock_buff, 0, sizeof (sock_buff));
-  	
-  	//odebranie zawartosci pliku
   	while(1){
-  		n = recv(sock , sock_buff , SOCKBUFSIZE ,MSG_DONTWAIT);
-		if(n > 0){
-			
-			file.write(sock_buff, n);
-			memset(&sock_buff, 0, sizeof (sock_buff));
-		}
-		if(n == 0)
-			break;
-	}
+  		n = recv(sock, sock_buff, SOCKBUFSIZE, MSG_DONTWAIT);
+  		if(n == 0){
+  			close(sock);
+  			break;
+  		}
+  		if(n > 0){
+  			cout << "Odbior pliku" << endl;
+  	
+  			ofstream file(sock_buff, ios::binary);
+  			memset(&sock_buff, 0, sizeof (sock_buff));
+  	
+  		//odebranie zawartosci pliku
+  			while(1){
+  				n = recv(sock , sock_buff , SOCKBUFSIZE , 0);
+				cout << n << endl;
+				if(n == 6){
+					break;
+				}
+				if(n > 0){
+					file.write(sock_buff, n);
+					memset(&sock_buff, 0, sizeof (sock_buff));
+				}	
+				if(n == 0)
+					break;
+				this_thread::sleep_for(wait);
+			}
 	
-    	file.close();
-    	cout << "Plik odebrany" << endl;
+    		file.close();
+    		cout << "Plik odebrany" << endl;
+    		}
+    	}
     	cout << "wyjscie z watku" << endl;
 
     	pthread_exit(NULL);
@@ -74,22 +87,66 @@ void sendAudio(int sock, char* audio){
 
 void * zczytaj(void *arg)
 {
+	int n;
+	int pauza = 0;
 	cout << "RADIO" << endl;
-	ifstream file ("nowykolor", ios::binary);
-  	memset(&file_buff, 0, sizeof (file_buff));
-  	
-  	//wyslanie zawartosci pliku
-  	while(file){
-  		file.read(file_buff, FILEBUFSIZE);
-  		size_t count =  file.gcount();
-  		for(size_t i = 0; i < clientFds.size(); i++)
-  			sendAudio(clientFds[i], file_buff);
-  		if(!count)
-  			break;
-  		this_thread::sleep_for(wait);
-  	}
-  	
-    	file.close();
+	while (1)
+	{
+	
+		for(int i = 0; i < listaplikow.size(); i++){
+			//wyslanie zawartosci pliku
+			ifstream file (listaplikow[i], ios::binary);
+			memset(&file_buff, 0, sizeof (file_buff));
+			while(file){
+				file.read(file_buff, FILEBUFSIZE);
+				size_t count =  file.gcount();
+				int licznik = 0;
+				cout << ile_klientow << endl;
+				while(licznik < ile_klientow){
+					send(clientFds[licznik].out, file_buff, FILEBUFSIZE,0);
+					n = recv(clientFds[licznik].kom, com_buff, COMBUFSIZE, MSG_DONTWAIT);
+					if(n > 0){
+						if (strcmp(com_buff, "close") == 0){
+							close(clientFds[licznik].out);
+							close(clientFds[licznik].kom);
+							clientFds.erase(clientFds.begin() + licznik);
+							ile_klientow --;
+							break;
+						}
+						if (strcmp(com_buff, "lista") == 0){
+							for(int k = 0; k < listaplikow.size();k++){
+								const char* nazwa_pliku;
+								nazwa_pliku = &listaplikow[k][0];
+								cout << 1 << endl;
+								send(clientFds[licznik].kom, nazwa_pliku, strlen(nazwa_pliku), 0);
+								send(clientFds[licznik].kom, "|", 1, 0);
+								
+								this_thread::sleep_for(wait);
+							}
+						}
+					}
+					if(n == 0){
+						close(clientFds[licznik].out);
+						close(clientFds[licznik].kom);
+						clientFds.erase(clientFds.begin() + licznik);
+						ile_klientow --;
+						cout << "klient sie rozlaczyl" << endl;
+						break;
+					}
+					licznik++;
+				}
+				if(!count)
+					break;
+				pauza++;
+				if(pauza == 30){
+					sleep(1);
+					pauza = 0;
+				}
+				this_thread::sleep_for(wait);
+			}
+				file.close();
+		}
+	}
 	pthread_exit(NULL);
 }
 
@@ -99,6 +156,12 @@ int main(){
   	struct sockaddr_storage serverStorage;
   	socklen_t addr_size;
 
+	string nazwa;
+	ifstream lista("listaplikow");
+	while(getline(lista, nazwa)){
+		listaplikow.push_back(nazwa);
+	}
+	lista.close();
 	
 
   	sock socks;
@@ -136,19 +199,21 @@ int main(){
     	{
         	//Przyjęcie nowego połączenia
         	addr_size = sizeof serverStorage;
-        	socks.in = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
+        	newSocket = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
         	socks.out = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
-        	cout << socks.out << endl;
-        	if(socks.in > 0){
-			clientFds.push_back(socks.out);
-			if( pthread_create(&thread_id, NULL, odbierz_dane, &socks.in) != 0 )  
+        	socks.kom = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
+        	cout << newSocket << socks.out << socks.kom << endl;
+        	ile_klientow++;
+        	if(newSocket > 0){
+			clientFds.push_back(socks);
+			if( pthread_create(&thread_id, NULL, odbierz_dane, &newSocket) != 0 )  
 		   		printf("Nie udalo sie stworzyc watku odbierajacego\n");
+		   		
+		pthread_detach(thread_id);
+		pthread_join(thread_id, NULL);
 
-			pthread_detach(thread_id);
-			pthread_join(thread_id,NULL);
         	}
     	}
     	pthread_detach(thread_idRad);
-    	pthread_mutex_destroy(&lock);
   return 0;
 }
