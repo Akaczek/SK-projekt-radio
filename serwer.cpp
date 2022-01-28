@@ -53,14 +53,18 @@ void * odbierz_dane(void *arg)
   		}
   		if(n > 0){
   			cout << "Odbior pliku" << endl;
-  	
+  			listaplikow.push_back(sock_buff);
+			ofstream lista("listaplikow", ios_base::app);
+			lista << sock_buff;
+			lista << endl;
+			lista.close();
+  			
   			ofstream file(sock_buff, ios::binary);
   			memset(&sock_buff, 0, sizeof (sock_buff));
   	
   		//odebranie zawartosci pliku
   			while(1){
   				n = recv(sock , sock_buff , SOCKBUFSIZE , 0);
-				cout << n << endl;
 				if(n == 6){
 					break;
 				}
@@ -75,6 +79,7 @@ void * odbierz_dane(void *arg)
 	
     		file.close();
     		cout << "Plik odebrany" << endl;
+    		ile_plikow++;
     		}
     	}
     	cout << "wyjscie z watku" << endl;
@@ -90,6 +95,8 @@ void * zczytaj(void *)
 {
 	int n;
 	int pauza = 0;
+	int ile_zmiana = 0;
+	bool czy_zmiana = false;
 	cout << "RADIO" << endl;
 	while (1)
 	{
@@ -104,8 +111,10 @@ void * zczytaj(void *)
 				int licznik_klienci = 0;
 				while(licznik_klienci < ile_klientow){
 					send(clientFds[licznik_klienci].out, file_buff, FILEBUFSIZE,0);
+					memset(&com_buff, 0, sizeof (com_buff));
 					n = recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, MSG_DONTWAIT);
 					if(n > 0){
+						cout << com_buff << endl;
 						if (strcmp(com_buff, "close") == 0){
 							close(clientFds[licznik_klienci].out);
 							close(clientFds[licznik_klienci].kom);
@@ -114,7 +123,7 @@ void * zczytaj(void *)
 							break;
 						}
 						if (strcmp(com_buff, "lista") == 0){
-							for(int k = 0; k < listaplikow.size();k++){
+							for(int k = 0; k < ile_plikow;k++){
 								const char* nazwa_pliku;
 								nazwa_pliku = &listaplikow[k][0];
 								send(clientFds[licznik_klienci].kom, nazwa_pliku, strlen(nazwa_pliku), 0);
@@ -122,6 +131,15 @@ void * zczytaj(void *)
 								
 								this_thread::sleep_for(wait);
 							}
+						}
+						if (strcmp(com_buff, "zmiana") == 0){
+							memset(&com_buff, 0, sizeof (com_buff));
+							recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, 0);
+							ile_zmiana = atoi(com_buff);
+							ile_zmiana = ile_zmiana - licznik_pliki;
+							cout << ile_zmiana << endl;
+							czy_zmiana = true;
+							break;
 						}
 					}
 					if(n == 0){
@@ -136,15 +154,25 @@ void * zczytaj(void *)
 				}
 				if(!count)
 					break;
+				if(czy_zmiana == true){
+					licznik_pliki = licznik_pliki + ile_zmiana;
+					break;
+				}
 				pauza++;
-				if(pauza == 30){
+				if(pauza == 28){
 					sleep(1);
 					pauza = 0;
 				}
+				
 				this_thread::sleep_for(wait);
 			}
 			file.close();
-			licznik_pliki++;		
+			if(czy_zmiana == true){
+				czy_zmiana = false;
+			}
+			else{
+				licznik_pliki++;
+			}		
 		}
 	}
 	pthread_exit(NULL);
@@ -173,20 +201,16 @@ int main(){
   	serverAddr.sin_family = AF_INET;
 
   	//Ustawienie numeru portu
-  	serverAddr.sin_port = htons(4444);
+  	serverAddr.sin_port = htons(8000);
 
   	//Ustawienie adresu na localhost
   	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-
-
-  	//Set all bits of the padding field to 0
-  	// memset(serverAddr.sin_zero, '\0', sizeof serverAddr.sin_zero);
 
   	//Połączenie struktury adresu z gniazdem
   	bind(serverSocket, (struct sockaddr *) &serverAddr, sizeof(serverAddr));
 
   	//Nasłuchiwanie na gnieździe
-  	if(listen(serverSocket,50)==0)
+  	if(listen(serverSocket,20)==0)
     		printf("Czekam na polaczenie\n");
   	else
     		printf("blad: listen\n");

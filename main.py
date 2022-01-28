@@ -6,7 +6,7 @@ import pygame
 import os
 
 HOST = "192.168.100.213"
-PORT = 4444
+PORT = 8000
 
 X = 500
 Y = 250
@@ -58,7 +58,7 @@ def receiveAudio(sock):
     while True:
         try:
             sock.settimeout(2)
-            data = sock.recv(4096)
+            data = sock.recv(8192)
             stream.write(data)
             sock.settimeout(None)
         except (socket.timeout, OSError):
@@ -198,6 +198,10 @@ if __name__ == "__main__":
                             print(lista_do_wyslania)
                             okno = "dodaj"
 
+                        if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
+                            sock_kom.send(bytes("zmiana", "utf-8"))
+                            time.sleep(1)
+                            sock_kom.send(bytes(str(ktore_kolejka), "utf-8"))
                         if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
                             if ktore_kolejka > 0:
                                 ktore_kolejka -= 1
@@ -282,8 +286,9 @@ if __name__ == "__main__":
                         if ktore_dodaj < len(lista_do_wyslania) - 1:
                             ktore_dodaj += 1
                     if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
-                        sendFile(lista_do_wyslania[ktore_dodaj], sock_out)
-                        okno = "radio"
+                        if lista_do_wyslania:
+                            sendFile(lista_do_wyslania[ktore_dodaj], sock_out)
+                            okno = "radio"
 
 
             if 410 <= mouse[0] <= 460 and 100 <= mouse[1] <= 150:
@@ -316,6 +321,8 @@ if __name__ == "__main__":
                 ktore_dodaj = 0
                 flaga = True
                 screen.fill((255, 255, 255))
+                sock_kom.send(bytes("lista", "utf-8"))
+                kolejka = receiveList(sock_kom)
                 pygame.display.update()
 
             pygame.display.update()
