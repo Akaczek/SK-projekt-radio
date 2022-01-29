@@ -5,17 +5,15 @@ import pyaudio
 import pygame
 import os
 
-HOST = "192.168.100.213"
-PORT = 8000
-
 X = 500
 Y = 250
 green = (0,255,0)
 red = (255,0,0)
 black = (0, 0, 0)
 white = (255,255,255)
-color_light = (170,170,170)
-color_dark = (100,100,100)
+navy_blue = (3,14,79)
+navy_blue_light = (6, 26, 143)
+yellow = (244,158,28)
 
 def whatGoodToSend():
     do_wyslania = []
@@ -68,7 +66,7 @@ def receiveAudio(sock):
 def sendFile(nazwa_pliku, sock):
     print("Wysyłanie...")
     sock.send(bytes(nazwa_pliku, "utf-8"))
-
+    time.sleep(1)
     wf = open(nazwa_pliku + ".wav", 'rb')
     audio = wf.read()
     n = 12000
@@ -96,6 +94,9 @@ stream = p.open(format=FORMAT,
 okno = "start"
 running = True
 
+HOST = "192.168.100.213"
+PORT = ""
+
 if __name__ == "__main__":
 
     pygame.init()
@@ -104,9 +105,10 @@ if __name__ == "__main__":
     connected = True
 
     font = pygame.font.SysFont('arial', 16)
+    fontBig = pygame.font.SysFont('arial', 32)
 
     przycisk_startu = pygame.Rect(100, 100, 100, 100)
-    przycisk_startu.center = (X//2, Y//2)
+    przycisk_startu.center = (X//2, Y//2 + 50)
 
     przycisk_stopu = pygame.Rect(400,20,80,80)
     stop = pygame.Rect(0,0,50,50)
@@ -126,13 +128,24 @@ if __name__ == "__main__":
 
     przycisk_cofnij = pygame.Rect(410, 100, 50, 50)
 
+    przycisk_usun = pygame.Rect(300, 10, 50, 20)
+
+    podswietlenie = pygame.Rect(40, 110, 250, 30)
+
+    input_host = pygame.Rect(0, 0, 140, 32)
+    input_host.center = (X//2, 30)
+
+    input_port = pygame.Rect(0, 0, 70, 32)
+    input_port.center = (X//2, 72)
 
     ktore_dodaj = 0
     ktore_kolejka = 0
 
     flaga = True
+    active_port = False
+    active_host = False
 
-    screen.fill((255, 255, 255))
+    screen.fill(yellow)
     # główna pętla
     while running:
         mouse = pygame.mouse.get_pos()
@@ -144,12 +157,28 @@ if __name__ == "__main__":
                     running = False
                     connected = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
+                    if input_port.collidepoint(event.pos):
+                        active_port = True
+                    else:
+                        active_port = False
+
+                    if input_host.collidepoint(event.pos):
+                        active_host = True
+                    else:
+                        active_host = False
+
+                    if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 <= mouse[1] <= Y / 2 + 100:
                         try:
+                            if HOST == "":
+                                HOST = "192.168.100.213"
+                            if PORT == "":
+                                PORT = 8001
+                            else:
+                                PORT = int(PORT)
                             sock_out, sock_in, sock_kom = polacz()
                             t1 = threading.Thread(target=receiveAudio, args=(sock_in,))
                             t1.start()
-                        except (ConnectionRefusedError, TimeoutError):
+                        except Exception as e:
                             connected = False
                         if connected:
                             sock_kom.send(bytes("lista", "utf-8"))
@@ -159,21 +188,42 @@ if __name__ == "__main__":
                             textRect = text.get_rect()
                             textRect.center = (X // 2, Y // 2)
                         okno = "radio"
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_BACKSPACE:
+                        if active_host:
+                            HOST = HOST[:-1]
+                        if active_port:
+                            PORT = PORT[:-1]
+                    else:
+                        if active_host:
+                            HOST += event.unicode
+                        if active_port:
+                            PORT += event.unicode
 
+                if okno != "radio":
+                    pygame.draw.rect(screen, white, input_host)
+                    text_surface = font.render(HOST, True, black)
+                    screen.blit(text_surface, (input_host.x + 5, input_host.y + 5))
 
-                if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
-                    pygame.draw.rect(screen, color_light, przycisk_startu,  border_radius=3)
+                    pygame.draw.rect(screen, white, input_port)
+                    text_surface = font.render(PORT, True, black)
+                    screen.blit(text_surface, (input_port.x + 5, input_port.y + 5))
+
+                if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 <= mouse[1] <= Y / 2 + 100:
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_startu,  border_radius=3)
 
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_startu, border_radius=3)
-                pygame.draw.polygon(screen, green, ((X//2-30, Y//2 + 40), (X//2 - 30, Y//2 - 40), (X//2 + 30, Y//2)))
+                    pygame.draw.rect(screen, navy_blue, przycisk_startu, border_radius=3)
+                pygame.draw.polygon(screen, green, ((X//2-30, Y//2 + 90), (X//2 - 30, Y//2 + 10), (X//2 + 30, Y//2 + 50)))
             pygame.display.update()
 
         #jest okno radia
         if okno == "radio":
-            screen.fill((255, 255, 255))
+            screen.fill(yellow)
+
             # jeśli połączony
             if connected:
+                pygame.draw.rect(screen, white, podswietlenie)
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         sock_kom.send(bytes("close", "utf-8"))
@@ -193,15 +243,20 @@ if __name__ == "__main__":
                             lista_do_wyslania = whatGoodToSend()
                             sock_kom.send(bytes("lista", "utf-8"))
                             kolejka = receiveList(sock_kom)
-                            print(kolejka)
                             lista_do_wyslania = list(set(lista_do_wyslania).difference(kolejka))
-                            print(lista_do_wyslania)
                             okno = "dodaj"
 
                         if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
                             sock_kom.send(bytes("zmiana", "utf-8"))
                             time.sleep(1)
                             sock_kom.send(bytes(str(ktore_kolejka), "utf-8"))
+                        if 300 <= mouse[0] <= 350 and 10 <= mouse[1] <= 30:
+                            sock_kom.send(bytes("usun", "utf-8"))
+                            time.sleep(1)
+                            sock_kom.send(bytes(str(ktore_kolejka), "utf-8"))
+                            time.sleep(1)
+                            sock_kom.send(bytes("lista", "utf-8"))
+                            kolejka = receiveList(sock_kom)
                         if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
                             if ktore_kolejka > 0:
                                 ktore_kolejka -= 1
@@ -209,33 +264,55 @@ if __name__ == "__main__":
                             if ktore_kolejka < len(kolejka) - 1:
                                 ktore_kolejka += 1
 
+                #przycisk_wlacz
                 if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
-                    pygame.draw.rect(screen, color_light, przycisk_wyslij, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_wyslij, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_wyslij, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue, przycisk_wyslij, border_radius=3)
+                pygame.draw.polygon(screen, green, ((przycisk_wyslij.centerx - 15, przycisk_wyslij.centery - 15),
+                                                   (przycisk_wyslij.centerx - 15, przycisk_wyslij.centery + 15),
+                                                   (przycisk_wyslij.centerx + 15, przycisk_wyslij.centery)))
 
+                #przycisk_w_gore
                 if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
-                    pygame.draw.rect(screen, color_light, przycisk_gora, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_gora, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_gora, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue, przycisk_gora, border_radius=3)
+                pygame.draw.polygon(screen, white, ((przycisk_gora.centerx - 10, przycisk_gora.centery + 10),
+                                                        (przycisk_gora.centerx + 10, przycisk_gora.centery + 10),
+                                                        (przycisk_gora.centerx, przycisk_gora.centery - 10)))
 
+                #przycisk_w_dol
                 if 350 <= mouse[0] <= 390 and 165 <= mouse[1] <= 205:
-                    pygame.draw.rect(screen, color_light, przycisk_dol, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_dol, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_dark, przycisk_dol, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue, przycisk_dol, border_radius=3)
+                pygame.draw.polygon(screen, white, ((przycisk_dol.centerx - 10, przycisk_dol.centery - 10),
+                                                    (przycisk_dol.centerx + 10, przycisk_dol.centery - 10),
+                                                    (przycisk_dol.centerx, przycisk_dol.centery + 10)))
+
+                #przycisk_usun
+                if 300 <= mouse[0] <= 350 and 10 <= mouse[1] <= 30:
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_usun, border_radius=3)
+                else:
+                    pygame.draw.rect(screen, navy_blue, przycisk_usun, border_radius=3)
+                text = font.render("Usuń", True, white)
+                textRect = text.get_rect()
+                textRect.center = przycisk_usun.center
+                screen.blit(text, textRect)
 
                 #przycisk stopu
                 if 400 <= mouse[0] <= 480 and 20 <= mouse[1] <= 100:
-                    pygame.draw.rect(screen, color_dark, przycisk_stopu, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue, przycisk_stopu, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_light, przycisk_stopu, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_stopu, border_radius=3)
                 pygame.draw.rect(screen, red, stop)
 
                 #przycisk dodaj
                 if 400 <= mouse[0] <= 480 and 150 <= mouse[1] <= 230:
-                    pygame.draw.rect(screen, color_dark, przycisk_dodaj, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue, przycisk_dodaj, border_radius=3)
                 else:
-                    pygame.draw.rect(screen, color_light, przycisk_dodaj, border_radius=3)
+                    pygame.draw.rect(screen, navy_blue_light, przycisk_dodaj, border_radius=3)
                 pygame.draw.rect(screen, black, pionowo)
                 pygame.draw.rect(screen, black, poziomo)
 
@@ -248,11 +325,11 @@ if __name__ == "__main__":
 
                 #przejscie do okna start
                 if okno == "start":
-                    screen.fill((255, 255, 255))
+                    screen.fill(yellow)
                     pygame.display.update()
                 #przejscie do okna dodaj
                 if okno == "dodaj":
-                    screen.fill((255, 255, 255))
+                    screen.fill(yellow)
                     pygame.display.update()
 
 
@@ -263,13 +340,12 @@ if __name__ == "__main__":
                     pygame.display.update()
                     if event.type == pygame.QUIT:
                         running = False;
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        print("click", mouse[0], mouse[1])
             pygame.display.update()
 
 
         if okno == "dodaj":
-            screen.fill((255, 255, 255))
+            screen.fill(yellow)
+            pygame.draw.rect(screen, white, podswietlenie)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sock_kom.send(bytes("close", "utf-8"))
@@ -287,29 +363,51 @@ if __name__ == "__main__":
                             ktore_dodaj += 1
                     if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
                         if lista_do_wyslania:
+                            text = fontBig.render("Trwa wysyłanie..", True, black)
+                            textRect = text.get_rect()
+                            textRect.center = (250, 30)
+                            screen.fill(yellow)
+                            screen.blit(text, textRect)
+                            pygame.display.update()
                             sendFile(lista_do_wyslania[ktore_dodaj], sock_out)
                             okno = "radio"
 
-
+            #przycisk cofnij
             if 410 <= mouse[0] <= 460 and 100 <= mouse[1] <= 150:
-                pygame.draw.rect(screen, color_light, przycisk_cofnij, border_radius=3)
+                pygame.draw.rect(screen, navy_blue_light, przycisk_cofnij, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_cofnij, border_radius=3)
+                pygame.draw.rect(screen, navy_blue, przycisk_cofnij, border_radius=3)
+            text = font.render("Cofnij", True, white)
+            textRect = text.get_rect()
+            textRect.center = przycisk_cofnij.center
+            screen.blit(text, textRect)
 
+            #przycisk gora
             if 350 <= mouse[0] <= 390 and 45 <= mouse[1] <= 85:
-                pygame.draw.rect(screen, color_light, przycisk_gora, border_radius=3)
+                pygame.draw.rect(screen, navy_blue_light, przycisk_gora, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_gora, border_radius=3)
+                pygame.draw.rect(screen, navy_blue, przycisk_gora, border_radius=3)
+            pygame.draw.polygon(screen, white, ((przycisk_gora.centerx - 10, przycisk_gora.centery + 10),
+                                                (przycisk_gora.centerx + 10, przycisk_gora.centery + 10),
+                                                (przycisk_gora.centerx, przycisk_gora.centery - 10)))
 
+            #przycisk dol
             if 350 <= mouse[0] <= 390 and 165 <= mouse[1] <= 205:
-                pygame.draw.rect(screen, color_light, przycisk_dol, border_radius=3)
+                pygame.draw.rect(screen, navy_blue_light, przycisk_dol, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_dol, border_radius=3)
+                pygame.draw.rect(screen, navy_blue, przycisk_dol, border_radius=3)
+            pygame.draw.polygon(screen, white, ((przycisk_dol.centerx - 10, przycisk_dol.centery - 10),
+                                                (przycisk_dol.centerx + 10, przycisk_dol.centery - 10),
+                                                (przycisk_dol.centerx, przycisk_dol.centery + 10)))
 
+            #przycisk wysyłania
             if 345 <= mouse[0] <= 395 and 100 <= mouse[1] <= 150:
-                pygame.draw.rect(screen, color_light, przycisk_wyslij, border_radius=3)
+                pygame.draw.rect(screen, navy_blue_light, przycisk_wyslij, border_radius=3)
             else:
-                pygame.draw.rect(screen, color_dark, przycisk_wyslij, border_radius=3)
+                pygame.draw.rect(screen, navy_blue, przycisk_wyslij, border_radius=3)
+            pygame.draw.polygon(screen, green, ((przycisk_wyslij.centerx - 15, przycisk_wyslij.centery - 15),
+                                                (przycisk_wyslij.centerx - 15, przycisk_wyslij.centery + 15),
+                                                (przycisk_wyslij.centerx + 15, przycisk_wyslij.centery)))
 
             for i in range(len(lista_do_wyslania)):
                 text = font.render(lista_do_wyslania[i], True, black)
@@ -320,7 +418,7 @@ if __name__ == "__main__":
             if okno == "radio":
                 ktore_dodaj = 0
                 flaga = True
-                screen.fill((255, 255, 255))
+                screen.fill(yellow)
                 sock_kom.send(bytes("lista", "utf-8"))
                 kolejka = receiveList(sock_kom)
                 pygame.display.update()
