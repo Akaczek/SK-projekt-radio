@@ -95,7 +95,7 @@ okno = "start"
 running = True
 
 HOST = "192.168.100.213"
-PORT = ""
+PORT = "8001"
 
 if __name__ == "__main__":
 
