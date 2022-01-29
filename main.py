@@ -17,7 +17,7 @@ yellow = (244,158,28)
 
 def whatGoodToSend():
     do_wyslania = []
-    files = os.listdir("./")
+    files = os.listdir("./muzyka")
     for file in files:
         if file[-3] == 'w':
             do_wyslania.append(file[:-4])
