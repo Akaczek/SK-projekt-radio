@@ -15,4 +15,4 @@ serwer.cpp - kod źródłowy serwera
 main.py - kod źródłowy klienta  
 configure.txt - plik konfiguracyjny dla klienta  
 muzyka - folder z przykladową muzyką do przesłania przez klienta  
-Radio.exe - aplikacja klienta(musi znajdować się w tym samym miejscu co: plik konfiguracyjny i folder muzyka  
+Radio.exe - aplikacja klienta(musi znajdować się w tym samym miejscu co: plik konfiguracyjny i folder muzyka)  
