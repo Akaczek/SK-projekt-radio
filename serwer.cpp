@@ -40,7 +40,7 @@ int ile_plikow = 0;
 //odbieranie od klienta
 void * odbierz_dane(void *arg)
 {
-  	cout << "Nowy klient" << endl;
+  	cout << "Nowy sluchacz" << endl;
   	int sock = *((int *)arg);
   	int n;
   	
@@ -52,7 +52,7 @@ void * odbierz_dane(void *arg)
   			break;
   		}
   		if(n > 0){
-  			cout << "Odbior pliku" << endl;
+  			cout << "Odbior pliku od sluchacza" << endl;
   			listaplikow.push_back(sock_buff);
 			ofstream lista("listaplikow", ios_base::app);
 			lista << sock_buff;
@@ -82,7 +82,7 @@ void * odbierz_dane(void *arg)
     		ile_plikow++;
     		}
     	}
-    	cout << "wyjscie z watku" << endl;
+    	cout << "Sluchacz sie rozlaczyl" << endl;
 
     	pthread_exit(NULL);
 }
@@ -96,8 +96,9 @@ void * zczytaj(void *)
 	int n;
 	int pauza = 0;
 	int ile_zmiana = 0;
+	int co_usun = 0;
 	bool czy_zmiana = false;
-	cout << "RADIO" << endl;
+	cout << "RADIO zaczyna nadawac" << endl;
 	while (1)
 	{
 		int licznik_pliki = 0;
@@ -114,7 +115,6 @@ void * zczytaj(void *)
 					memset(&com_buff, 0, sizeof (com_buff));
 					n = recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, MSG_DONTWAIT);
 					if(n > 0){
-						cout << com_buff << endl;
 						if (strcmp(com_buff, "close") == 0){
 							close(clientFds[licznik_klienci].out);
 							close(clientFds[licznik_klienci].kom);
@@ -137,9 +137,17 @@ void * zczytaj(void *)
 							recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, 0);
 							ile_zmiana = atoi(com_buff);
 							ile_zmiana = ile_zmiana - licznik_pliki;
-							cout << ile_zmiana << endl;
 							czy_zmiana = true;
 							break;
+						}
+						if (strcmp(com_buff, "usun") == 0){
+							memset(&com_buff, 0, sizeof (com_buff));
+							recv(clientFds[licznik_klienci].kom, com_buff, COMBUFSIZE, 0);
+							co_usun = atoi(com_buff);
+							if((licznik_pliki - co_usun) != 0){
+								listaplikow.erase(listaplikow.begin() + co_usun);
+								ile_plikow--;
+							}
 						}
 					}
 					if(n == 0){
@@ -147,7 +155,7 @@ void * zczytaj(void *)
 						close(clientFds[licznik_klienci].kom);
 						clientFds.erase(clientFds.begin() + licznik_klienci);
 						ile_klientow --;
-						cout << "klient sie rozlaczyl" << endl;
+						cout << "Sluchacz sie rozlaczyl" << endl;
 						break;
 					}
 					licznik_klienci++;
@@ -178,13 +186,26 @@ void * zczytaj(void *)
 	pthread_exit(NULL);
 }
 
-int main(){
-	int serverSocket, newSocket;
+int main(int argc, char** argv){	
+
+	auto port = 8001;
+	int serverSocket, sock_in;
   	struct sockaddr_in serverAddr;
   	struct sockaddr_storage serverStorage;
   	socklen_t addr_size;
-
+  	sock socks;
 	string nazwa;
+	pthread_t thread_id;
+    	pthread_t thread_idRad;
+    	
+    	if(argc != 2){
+    		cout << "Port ustawiony na domyslny" << endl;
+    	}
+    	else{
+    		port = atoi(argv[1]);
+    	}
+	
+	//Zczytanie plikow jakie znajduja sie na serwerze
 	ifstream lista("listaplikow");
 	while(getline(lista, nazwa)){
 		listaplikow.push_back(nazwa);
@@ -192,8 +213,7 @@ int main(){
 	}
 	lista.close();
 	
-
-  	sock socks;
+  	
   	//Stworzenie gniazda
   	serverSocket = socket(PF_INET, SOCK_STREAM, 0);
 
@@ -201,7 +221,7 @@ int main(){
   	serverAddr.sin_family = AF_INET;
 
   	//Ustawienie numeru portu
-  	serverAddr.sin_port = htons(8000);
+  	serverAddr.sin_port = htons(port);
 
   	//Ustawienie adresu na localhost
   	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -213,10 +233,9 @@ int main(){
   	if(listen(serverSocket,20)==0)
     		printf("Czekam na polaczenie\n");
   	else
-    		printf("blad: listen\n");
-    	pthread_t thread_id;
-    	pthread_t thread_idRad;
+    		printf("blad: listen\n");    	
     	
+    	//Stworzenie watku radia
     	if(pthread_create(&thread_idRad, NULL, zczytaj, 0) != 0)
     		printf("Nie udalo sie stworzyc watku radia\n");
 
@@ -224,14 +243,15 @@ int main(){
     	{
         	//Przyjęcie nowego połączenia
         	addr_size = sizeof serverStorage;
-        	newSocket = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
+        	sock_in = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
         	socks.out = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
         	socks.kom = accept(serverSocket, (struct sockaddr *) &serverStorage, &addr_size);
-        	cout << newSocket << socks.out << socks.kom << endl;
         	ile_klientow++;
-        	if(newSocket > 0){
+        	
+        	//Stworzenie watku odbierajacego pliki dla nowopolaczonego klienta
+        	if(sock_in> 0){
 			clientFds.push_back(socks);
-			if( pthread_create(&thread_id, NULL, odbierz_dane, &newSocket) != 0 )  
+			if( pthread_create(&thread_id, NULL, odbierz_dane, &sock_in) != 0 )  
 		   		printf("Nie udalo sie stworzyc watku odbierajacego\n");
 		   		
 		pthread_detach(thread_id);
