@@ -94,10 +94,13 @@ stream = p.open(format=FORMAT,
 okno = "start"
 running = True
 
-HOST = "192.168.100.213"
-PORT = "8001"
-
 if __name__ == "__main__":
+
+    f = open("configure.txt", "r")
+    HOST = f.readline()[:-1]
+    print("HOST", HOST)
+    PORT = int(f.readline())
+    print("PORT", PORT)
 
     pygame.init()
     screen = pygame.display.set_mode([X,Y])
@@ -108,7 +111,7 @@ if __name__ == "__main__":
     fontBig = pygame.font.SysFont('arial', 32)
 
     przycisk_startu = pygame.Rect(100, 100, 100, 100)
-    przycisk_startu.center = (X//2, Y//2 + 50)
+    przycisk_startu.center = (X//2, Y//2)
 
     przycisk_stopu = pygame.Rect(400,20,80,80)
     stop = pygame.Rect(0,0,50,50)
@@ -132,18 +135,10 @@ if __name__ == "__main__":
 
     podswietlenie = pygame.Rect(40, 110, 250, 30)
 
-    input_host = pygame.Rect(0, 0, 140, 32)
-    input_host.center = (X//2, 30)
-
-    input_port = pygame.Rect(0, 0, 70, 32)
-    input_port.center = (X//2, 72)
-
     ktore_dodaj = 0
     ktore_kolejka = 0
 
     flaga = True
-    active_port = False
-    active_host = False
 
     screen.fill(yellow)
     # główna pętla
@@ -157,28 +152,16 @@ if __name__ == "__main__":
                     running = False
                     connected = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if input_port.collidepoint(event.pos):
-                        active_port = True
-                    else:
-                        active_port = False
-
-                    if input_host.collidepoint(event.pos):
-                        active_host = True
-                    else:
-                        active_host = False
-
-                    if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 <= mouse[1] <= Y / 2 + 100:
+                    if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
                         try:
                             if HOST == "":
                                 HOST = "192.168.100.213"
                             if PORT == "":
                                 PORT = 8001
-                            else:
-                                PORT = int(PORT)
                             sock_out, sock_in, sock_kom = polacz()
                             t1 = threading.Thread(target=receiveAudio, args=(sock_in,))
                             t1.start()
-                        except Exception as e:
+                        except (ConnectionRefusedError, TimeoutError):
                             connected = False
                         if connected:
                             sock_kom.send(bytes("lista", "utf-8"))
@@ -188,33 +171,13 @@ if __name__ == "__main__":
                             textRect = text.get_rect()
                             textRect.center = (X // 2, Y // 2)
                         okno = "radio"
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_BACKSPACE:
-                        if active_host:
-                            HOST = HOST[:-1]
-                        if active_port:
-                            PORT = PORT[:-1]
-                    else:
-                        if active_host:
-                            HOST += event.unicode
-                        if active_port:
-                            PORT += event.unicode
 
-                if okno != "radio":
-                    pygame.draw.rect(screen, white, input_host)
-                    text_surface = font.render(HOST, True, black)
-                    screen.blit(text_surface, (input_host.x + 5, input_host.y + 5))
-
-                    pygame.draw.rect(screen, white, input_port)
-                    text_surface = font.render(PORT, True, black)
-                    screen.blit(text_surface, (input_port.x + 5, input_port.y + 5))
-
-                if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 <= mouse[1] <= Y / 2 + 100:
+                if X / 2 - 50 <= mouse[0] <= X / 2 + 50 and Y / 2 - 50 <= mouse[1] <= Y / 2 + 50:
                     pygame.draw.rect(screen, navy_blue_light, przycisk_startu,  border_radius=3)
 
                 else:
                     pygame.draw.rect(screen, navy_blue, przycisk_startu, border_radius=3)
-                pygame.draw.polygon(screen, green, ((X//2-30, Y//2 + 90), (X//2 - 30, Y//2 + 10), (X//2 + 30, Y//2 + 50)))
+                pygame.draw.polygon(screen, green, ((X//2-30, Y//2 + 40), (X//2 - 30, Y//2 - 40), (X//2 + 30, Y//2)))
             pygame.display.update()
 
         #jest okno radia
